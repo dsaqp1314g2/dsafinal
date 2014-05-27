@@ -1,16 +1,14 @@
-package edu.upc.eetac.dsa.nmendo.books.api;
+package edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api;
 
-import java.security.SecurityPermission;
+import java.awt.print.Book;
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 
 import javax.sql.DataSource;
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
@@ -21,11 +19,17 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.ServerErrorException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.Categoria;
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.Puntuaciones;
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.Review;
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.ReviewCollection;
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.Videos;
+import edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model.VideosCollection;
 
 
 @Path("/videoshare")
@@ -35,6 +39,7 @@ public class VideoshareResource {
 	@Context
 	SecurityContext security;
 	private DataSource ds = DataSourceSPA.getInstance().getDataSource();
+	private SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
 
 	// para obtener la coleción de videos GET (1)
 
@@ -42,13 +47,13 @@ public class VideoshareResource {
 	@Produces(MediaType.VIDEOSHARE_API_VIDEOS_COLLECTION)
 	public VideosCollection getVideos() {
 		VideosCollection videos = new VideosCollection();
-
+		
 		// hacemos la conexión a la base de datos
 		Connection conn = null;
 		try {
 			conn = ds.getConnection();
 		} catch (SQLException e) {
-			throw new ServerErrorException("Could not connect to the database",
+			throw new ServerErrorException("Could not connect to the databaseeeeeeeeeeeeee",
 					Response.Status.SERVICE_UNAVAILABLE);
 		}
 
@@ -59,67 +64,69 @@ public class VideoshareResource {
 			// obtenemos la respuesta
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
-				Video video = new Video();
+				Videos video = new Videos();
                 video.setVideoid(rs.getString("videoid"));
                 video.setNombre_video(rs.getString("nombre_video"));
                 video.setUsername(rs.getString("username"));
-                video.setFecha(rs.getString("fecha"));
+                video.setFecha(rs.getDate("fecha"));
                 
+                
+                String videoid = video.getVideoid();
                 try
                 {
                     String sqlr="select*from review where videoid = ?";
                     stmt.close();
                     stmt = conn.prepareStatement(sqlr);
-                    stmt.setInt(1, videoid);
+                    stmt.setString(1, videoid);
                     rs = stmt.executeQuery();
                     while (rs.next()) {
                         Review review = new Review();
                         review.setVideoid(rs.getInt("videoid"));
                         review.setReviewtext(rs.getString("reviewtext"));
-                        review.setFecha(rs.getTimestamp("fecha_hora"));
+                        review.setFecha_hora(rs.getDate("fecha_hora"));
                         review.setReviewid(rs.getInt("reviewid"));
                         review.setUsername(rs.getString("username"));
                         
-                        book.addReview(review);
+                        video.addReview(review);
                     }
                     
-                    String sqlc = "select*from categorias where videoid=?";
+                    String sqlc = "select * from categorias where videoid=?";
                     stmt.close();
                     stmt = conn.prepareStatement(sqlc);
-                    stmt.setInt(1, videoid);
+                    stmt.setString(1, videoid);
                     rs = stmt.executeQuery();
                     if (rs.next()) {
-                        Categroia cat = new Categroia();
+                        Categoria cat = new Categoria();
                         cat.setTagid(rs.getString("tagid"));
-                        review.setCategoria.getInt("categoria"));
+                        cat.setCategoria(rs.getString("categoria"));
                         
-                        book.addCategoria(cat);
+                        video.addCategoria(cat);
                     }
                     else
                     {
                         throw new NotFoundException();
                     }
                     
-                    String sqlp = "select*from puntuaciones where videoid=?";
+                    String sqlp = "select * from puntuaciones where videoid=?";
                     stmt.close();
                     stmt = conn.prepareStatement(sqlp);
-                    stmt.setInt(1, videoid);
+                    stmt.setString(1, videoid);
                     rs = stmt.executeQuery();
                     if (rs.next()) {
                         Puntuaciones punt = new Puntuaciones();
                         punt.setPuntuacionid(rs.getInt("puntuacionid"));
                         punt.setPuntuacion(rs.getInt("puntuacion"));
                         
-                        book.addPuntuacion(punt);
+                        video.addPuntuacion(punt);
                     }
                 }
-                catch()
+                catch(SQLException e)
                 {
                     throw new ServerErrorException(e.getMessage(),
                                                    Response.Status.INTERNAL_SERVER_ERROR);
                 }
                 finally{
-                    video.addVideo(video);
+                    videos.addVideos(video);
                 }
 			}
 		} catch (SQLException e) {
@@ -141,12 +148,12 @@ public class VideoshareResource {
 	@GET
 	@Path("/{idvideo}")
 	@Produces(MediaType.VIDEOSHARE_API_VIDEOS)
-	public Video getVideoid(@PathParam("videoid") String videoid) {
+	public Videos getVideoid(@PathParam("videoid") String videoid) {
         
         //llamaremos a la método que nos permite obtener un video a partir de su
         //video id además de la categoría que está asociado, comentarios, y puntuación
         
-        Video video = getVideoFromDatabase(videoid);
+        Videos video = getVideoFromDatabase(videoid);
         return video;
     
 	}
@@ -156,7 +163,7 @@ public class VideoshareResource {
 	@Path("/{videoid}")
 	@Consumes(MediaType.VIDEOSHARE_API_VIDEOS)
 	@Produces(MediaType.VIDEOSHARE_API_VIDEOS)
-	public Video updateBook(@PathParam("videoid") String videoid, Video video) {
+	public Videos updateBook(@PathParam("videoid") String videoid, Videos video) {
 		
         //¡¡¡¡¡¡¡ falta añadir que compruebe que el usuario que edita sea el que lo haya creado
         // Alicia solo edita lo de Alicia
@@ -175,16 +182,16 @@ public class VideoshareResource {
 			stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 			stmt.setString(1, video.getNombre_video());
 			stmt.setString(2, video.getUsername());
-			stmt.setString(3, video.getFecha());
+			stmt.setDate(3, video.getFecha());
             stmt.setString(4, video.getUsername());
-			stmt.setInt(5, videoid);
+			stmt.setString(5, videoid);
 			stmt.executeUpdate(); // para añadir la ficha del libro con los
 									// datos a la BBDD
 			// si ha ido bien la inserción
 			ResultSet rs = stmt.getGeneratedKeys();
 			if (rs.next()) {
 				// devuelve el video editado
-				video = getBookFromDatabase(videoid);
+				video = getVideoFromDatabase(videoid);
 			} else {
 				throw new NotFoundException("Could not update the video info");
 			}
@@ -233,7 +240,7 @@ public class VideoshareResource {
 			// llamamos a la función para la query y la hacemos la database
 			String sql = buildDeleteVideo();
 			stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			stmt.setInt(1, videoid);
+			stmt.setString(1, videoid);
 
 			int rows = stmt.executeUpdate();
 
@@ -260,10 +267,10 @@ public class VideoshareResource {
 	@Path("/{videoid}/reviews")
 	@Consumes(MediaType.VIDEOSHARE_API_VIDEOS)
 	@Produces(MediaType.VIDEOSHARE_API_VIDEOS)
-	public Video creatReview(@PathParam("videoid") String videoid, Review review) {
+	public Videos creatReview(@PathParam("videoid") String videoid, Review review) {
 		// Comprobamos que el usuario que vaya a crear la ficha de libro sea
 		// ADMIN
-		Video video = null;
+		Videos video = null;
 
 		if (!security.isUserInRole("registered")) {
 			throw new ForbiddenException("You have not registered");
@@ -281,10 +288,10 @@ public class VideoshareResource {
 		try {
 			String sql = buildCreateReview();
 			stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			stmt.setString(2, review.getVideoid());
-			stmt.setString(3, review.getUsername());
+			stmt.setInt(1, review.getVideoid());
+			stmt.setString(2, review.getUsername());
             stmt.setString(3, review.getReviewtext());
-            stmt.setString(4, review.getFehca());
+            stmt.setDate(4, review.getFecha_hora());
 			stmt.executeUpdate();
 
 			// si ha ido bien la inserción
@@ -338,7 +345,8 @@ public class VideoshareResource {
 			// llamamos a la función para la query y la hacemos la database
 			String sql = buildDeleteReview();
 			stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			stmt.setInt(1, reviewid);
+			
+			stmt.setString(1, reviewid);
 
 			int rows = stmt.executeUpdate();
 
@@ -379,9 +387,10 @@ public class VideoshareResource {
 	}
 
 	// 5.3. Método para obtener libro con bookid
-	private Video getVideoFromDatabase(String videoid) {
+	private Videos getVideoFromDatabase(String videoid) {
 		Connection conn = null;
-		Video video = new Video();
+		VideosCollection videos = new VideosCollection();
+		Videos video = new Videos();
 		try {
 			conn = ds.getConnection();
 		} catch (SQLException e) {
@@ -400,11 +409,11 @@ public class VideoshareResource {
 
 			ResultSet rs = stmt.executeQuery();
 			if (rs.next()) {
-                Video video = new Video();
+               
                 video.setVideoid(rs.getString("videoid"));
                 video.setNombre_video(rs.getString("nombre_video"));
                 video.setUsername(rs.getString("username"));
-                video.setFecha(rs.getString("fecha"));
+                video.setFecha(rs.getDate("fecha"));
             }
             else
             {
@@ -414,30 +423,30 @@ public class VideoshareResource {
             String sqlr="select*from review where videoid = ?";
             stmt.close();
 			stmt = conn.prepareStatement(sqlr);
-			stmt.setInt(1, videoid);
+			stmt.setString(1, videoid);
 			rs = stmt.executeQuery();
 			while (rs.next()) {
 				Review review = new Review();
                 review.setVideoid(rs.getInt("videoid"));
 				review.setReviewtext(rs.getString("reviewtext"));
-				review.setFecha(rs.getTimestamp("fecha_hora"));
+				review.setFecha_hora(rs.getDate("fecha_hora"));
 				review.setReviewid(rs.getInt("reviewid"));
 				review.setUsername(rs.getString("username"));
                 
-				book.addReview(review);
+				video.addReview(review);
 			}
             
             String sqlc = "select*from categorias where videoid=?";
             stmt.close();
 			stmt = conn.prepareStatement(sqlc);
-			stmt.setInt(1, videoid);
+			stmt.setString(1, videoid);
 			rs = stmt.executeQuery();
 			if (rs.next()) {
-				Categroia cat = new Categroia();
+				Categoria cat = new Categoria();
 				cat.setTagid(rs.getString("tagid"));
-				review.setCategoria.getInt("categoria"));
+				cat.setCategoria(rs.getString("categoria"));
                 
-				book.addCategoria(cat);
+				video.addCategoria(cat);
 			}
             else
             {
@@ -447,19 +456,19 @@ public class VideoshareResource {
             String sqlp = "select*from puntuaciones where videoid=?";
             stmt.close();
 			stmt = conn.prepareStatement(sqlp);
-			stmt.setInt(1, videoid);
+			stmt.setString(1, videoid);
 			rs = stmt.executeQuery();
 			if (rs.next()) {
 				Puntuaciones punt = new Puntuaciones();
 				punt.setPuntuacionid(rs.getInt("puntuacionid"));
                 punt.setPuntuacion(rs.getInt("puntuacion"));
                 
-				book.addPuntuacion(punt);
+				video.addPuntuacion(punt);
 			}
             
-            video.addVideo(video);
+            
 			}
-		} catch (SQLException e) {
+		catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
 			try {
@@ -472,7 +481,7 @@ public class VideoshareResource {
 						Response.Status.INTERNAL_SERVER_ERROR);
 			}
 		}
-		return book;
+		return video;
 	}
 
 	// (6)PUT hacer una actualización de la ficha del libro:
@@ -491,9 +500,9 @@ public class VideoshareResource {
 	}
 
 	// 8.1. Obtener review a partir del reviewid
-	private Review getReviewFromDatbase(int reviewid) {
+	private Review getReviewFromDatbase(String reviewid) {
 		Connection conn = null;
-		Book book = new Book();
+		
 		Review review = new Review();
 		try {
 			conn = ds.getConnection();
@@ -506,14 +515,14 @@ public class VideoshareResource {
 		try {
 			String sql = buildQueryGetReviewByReviewid();
 			stmt = conn.prepareStatement(sql);
-			stmt.setInt(1, reviewid);
+			stmt.setString(1, reviewid);
 
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
-				review.setvideoid(rs.getInt("videoid"));
+				review.setVideoid(rs.getInt("videoid"));
 				review.setUsername(rs.getString("username"));
 				review.setReviewid(rs.getInt("reviewid"));
-				review.setTimestamp(rs.get("fecha_hora"));
+				review.setFecha_hora(rs.getDate("fecha_hora"));
 				// FALTA AÑADIR PARA EL TEXTO DE LA RESEÑA
 			}
 		} catch (SQLException e) {
@@ -545,7 +554,7 @@ public class VideoshareResource {
 	// (9) Actulizar reseña
 	// 9.1. Validación del usuario (alicia sólo editar/eliminar reseña de
 	// Alicia)
-	private void validateUser(int reviewid) {
+	private void validateUser(String reviewid) {
 		// si el usuario que consulta la reseña no es el que la ha creado,
 		// ForbiddenException
 		Review currentReview = getReviewFromDatbase(reviewid);

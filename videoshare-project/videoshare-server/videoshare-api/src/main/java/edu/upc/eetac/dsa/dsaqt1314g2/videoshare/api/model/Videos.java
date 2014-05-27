@@ -1,5 +1,7 @@
-package edu.upc.eetac.dsa.cartigas.beeter.api.model;
+package edu.upc.eetac.dsa.dsaqt1314g2.videoshare.api.model;
 
+import java.sql.Date;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.core.Link;
@@ -35,7 +37,7 @@ public class Videos {
     
     //Categorias
 	public void addCategoria(Categoria categoria) {
-		categoria.add(categoria);
+		categorias.add(categoria);
 	}
     public List<Categoria> getCategorias() {
 		return categorias;
@@ -48,7 +50,7 @@ public class Videos {
     public void addPuntuacion(Puntuaciones puntuacion) {
 		puntuaciones.add(puntuacion);
 	}
-    public List<Puntuacion> getPuntuaciones() {
+    public List<Puntuaciones> getPuntuaciones() {
 		return puntuaciones;
 	}
 	public void setPuntuaciones(List<Puntuaciones> puntuaciones) {
@@ -81,10 +83,10 @@ public class Videos {
 	public void setUsername(String username) {
 		this.username = username;
 	}
-	public String getFecha() {
+	public Date getFecha() {
 		return fecha;
 	}
-	public void setFecha(String fecha) {
+	public void setFecha(Date fecha) {
 		this.fecha = fecha;
 	}
 	

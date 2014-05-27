@@ -17,7 +17,7 @@ public class DataSourceSPA {
 		try {
 			envContext = new InitialContext();
 			Context initContext = (Context) envContext.lookup("java:/comp/env");
-			dataSource = (DataSource) initContext.lookup("jdbc/videosharerdb");
+			dataSource = (DataSource) initContext.lookup("jdbc/videosharedb");
 		} catch (NamingException e1) {
 			e1.printStackTrace();
 		}

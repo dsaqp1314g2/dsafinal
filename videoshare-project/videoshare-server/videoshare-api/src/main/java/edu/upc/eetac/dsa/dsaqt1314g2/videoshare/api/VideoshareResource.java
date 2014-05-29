@@ -355,12 +355,12 @@ public class VideoshareResource {
 	}
 	@DELETE
 	@Path("/{videoid}")
-	public void deleteBook(@PathParam("videoid") String videoid) {
+	public void deleteVideo(@PathParam("videoid") String videoid) {
 		// Comprobamos que el usuario que vaya a crear la ficha de libro sea
 		// ADMIN: llamamos al método validateUser del usuario user
-		if (!security.isUserInRole("registered")) {
+	/*	if (!security.isUserInRole("registered")) {
 			throw new ForbiddenException("You are not an admin.");
-		}
+		} */
 
 		// ¡¡¡¡ falta añadir que el usuario que vaya a eliminar sea el que ha
 		// subido el video !!!!
@@ -403,17 +403,17 @@ public class VideoshareResource {
 	// (8) Hacer publicación de un comentario de un video
 	@POST
 	@Path("/{videoid}/reviews")
-	@Consumes(MediaType.VIDEOSHARE_API_VIDEOS)
-	@Produces(MediaType.VIDEOSHARE_API_VIDEOS)
+	@Consumes(MediaType.VIDEOSHARE_API_REVIEWS)
+	@Produces(MediaType.VIDEOSHARE_API_REVIEWS)
 	public Videos creatReview(@PathParam("videoid") String videoid,
 			Review review) {
 		// Comprobamos que el usuario que vaya a crear la ficha de libro sea
 		// ADMIN
 		Videos video = null;
-
+/*
 		if (!security.isUserInRole("registered")) {
 			throw new ForbiddenException("You have not registered");
-		}
+		} */
 
 		Connection conn = null;
 		try {
@@ -427,16 +427,17 @@ public class VideoshareResource {
 		try {
 			String sql = buildCreateReview();
 			stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-			stmt.setInt(1, review.getVideoid());
+			stmt.setString(1, videoid);
 			stmt.setString(2, review.getUsername());
-			stmt.setString(3, review.getReviewtext());
-			stmt.setDate(4, review.getFecha_hora());
+			stmt.setString(4, review.getReviewtext());
+			stmt.setDate(3, review.getFecha_hora());
 			stmt.executeUpdate();
 
 			// si ha ido bien la inserción
 			ResultSet rs = stmt.getGeneratedKeys();
+			video = getVideoFromDatabase(videoid);
 			if (rs.next()) {
-				video = getVideoFromDatabase(videoid);
+				
 			} else {
 				// Something has failed...
 			}
@@ -624,7 +625,7 @@ public class VideoshareResource {
 
 	// (8) POST Crear una reseña de un libro con bookid
 	private String buildCreateReview() {
-		return "insert into review (videoid, username, fecha_hora, reviewtext) value (?, ?, ?, ?, ?)";
+		return "insert into review (videoid, username, fecha_hora, reviewtext) value (?, ?, ?, ?)";
 	}
 
 	// 8.1. Obtener review a partir del reviewid
